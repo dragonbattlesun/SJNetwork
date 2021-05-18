@@ -11,8 +11,13 @@
 #import "SJNetworkConfig.h"
 #import "SJNetworkUtils.h"
 #import "SJNetworkProtocol.h"
+#if __has_include(<AFNetworking/AFNetworking.h>)
+#import <AFNetworking/AFNetworking.h>
+#import <AFNetworking/AFNetworkActivityIndicatorManager.h>
+#else
 #import "AFNetworking.h"
-
+#import "AFNetworkActivityIndicatorManager.h"
+#endif
 @interface SJNetworkUploadEngine()<SJNetworkProtocol>
 
 @property (nonatomic, strong) AFHTTPSessionManager *sessionManager;
