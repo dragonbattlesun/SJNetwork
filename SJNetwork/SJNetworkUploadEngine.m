@@ -11,6 +11,7 @@
 #import "SJNetworkConfig.h"
 #import "SJNetworkUtils.h"
 #import "SJNetworkProtocol.h"
+#import "AFNetworking.h"
 
 @interface SJNetworkUploadEngine()<SJNetworkProtocol>
 
