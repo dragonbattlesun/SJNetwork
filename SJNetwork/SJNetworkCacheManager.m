@@ -222,8 +222,7 @@ static dispatch_queue_t sj_cache_io_queue() {
         
         NSUInteger fileCount = 0;
         NSUInteger totalSize = 0;
-        
-        NSDirectoryEnumerator *fileEnumerator = [_fileManager enumeratorAtURL:diskCacheURL
+        NSDirectoryEnumerator *fileEnumerator = [self->_fileManager enumeratorAtURL:diskCacheURL
                                                    includingPropertiesForKeys:@[NSFileSize]
                                                                       options:NSDirectoryEnumerationSkipsHiddenFiles
                                                                  errorHandler:NULL];
@@ -242,7 +241,7 @@ static dispatch_queue_t sj_cache_io_queue() {
         }else{
             totalSizeStr = [NSString stringWithFormat:@"%.4f MB",totalSize * 1.0/(mb)];
         }
-        if (_isDebugMode) {
+        if (self->_isDebugMode) {
             SJLog(@"=========== Calculate cache size succeed:total fileCount:%ld & totalSize:%@",(unsigned long)fileCount,totalSizeStr);
         }
         if (completionBlock) {
@@ -263,11 +262,11 @@ static dispatch_queue_t sj_cache_io_queue() {
         
         NSError *removeCacheFolderError = nil;
         NSError *createCacheFolderError = nil;
-        [_fileManager removeItemAtPath:_cacheBasePath error:&removeCacheFolderError];
+        [self->_fileManager removeItemAtPath:self->_cacheBasePath error:&removeCacheFolderError];
         
         if (!removeCacheFolderError) {
             
-            [_fileManager createDirectoryAtPath:_cacheBasePath
+            [self->_fileManager createDirectoryAtPath:self->_cacheBasePath
                     withIntermediateDirectories:YES
                                      attributes:nil
                                           error:&createCacheFolderError];
@@ -284,7 +283,7 @@ static dispatch_queue_t sj_cache_io_queue() {
             }else{
                 
                 dispatch_async(dispatch_get_main_queue(), ^{
-                if (_isDebugMode) {
+                    if (self->_isDebugMode) {
                     SJLog(@"=========== Clearing cache error: Failed to create cache folder after removing it");
                 }
                 if(completionBlock) {
@@ -298,7 +297,7 @@ static dispatch_queue_t sj_cache_io_queue() {
         }else{
             
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (_isDebugMode) {
+                if (self->_isDebugMode) {
                     SJLog(@"=========== Clearing cache error: Failed to remove cache folder");
                 }
                 if (completionBlock) {

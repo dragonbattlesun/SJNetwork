@@ -43,27 +43,11 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  */
 + (NSString * _Nonnull)generateMD5StringFromString:(NSString *_Nonnull)string;
 
-/**
- *  This method is used to generate partial identifier of more than one request
- *
- *  @param baseUrlStr                   base url
- *  @param requestUrlStr                request url
- *  @param methodStr                       request method
- *
- *  @return the unique identifier  of a specific request
- */
-+ (NSString *_Nonnull)generatePartialIdentiferWithBaseUrlStr:(NSString * _Nonnull)baseUrlStr
-                                               requestUrlStr:(NSString * _Nullable)requestUrlStr
-                                                   methodStr:(NSString * _Nullable)methodStr;
-
-
-
-
 
 /**
  *  This method is used to generate unique identifier of a specific request
  *
- *  @param requestUrlStr                request url
+ *  @param UrlStr                           request url
  *  @param methodStr                    request method
  *  @param parameters                   parameters (can be nil)
  *
@@ -170,10 +154,10 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
 
 /// URL Decoding
 /// @param urlString NSString
-+ (NSString *)URLDecoding:(NSString *)urlString;
++ (NSString *_Nonnull)URLDecoding:(NSString *_Nonnull)urlString;
 
 /// URL Encoding
 /// @param urlString NSString
-+ (NSString *)URLEncoding:(NSString *)urlString;
++ (NSString *_Nonnull)URLEncoding:(NSString *_Nonnull)urlString;
 
 @end
