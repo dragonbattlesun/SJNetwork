@@ -9,7 +9,6 @@
 #import "SJNetworkRequestEngine.h"
 #import "SJNetworkCacheManager.h"
 #import "SJNetworkRequestPool.h"
-#import "SJNetworkConfig.h"
 #import "SJNetworkUtils.h"
 #import "SJNetworkProtocol.h"
 
@@ -19,13 +18,13 @@
 
 @property (nonatomic, strong) SJNetworkCacheManager *cacheManager;
 
+@property (nonatomic, assign) BOOL isDebugMode;
+
 @end
 
 
-@implementation SJNetworkRequestEngine
-{
+@implementation SJNetworkRequestEngine{
     NSFileManager *_fileManager;
-    BOOL _isDebugMode;
 }
 
 
@@ -46,23 +45,14 @@
     if (self) {
         
         //file  manager
-        _fileManager = [NSFileManager defaultManager];
-        _isAddCustomHeaders = YES;
-        //cachec manager
-        _cacheManager = [SJNetworkCacheManager sharedManager];
-        
-        //debug mode or not
-        _isDebugMode = [SJNetworkConfig sharedConfig].debugMode;
-        
+        _fileManager = [NSFileManager defaultManager];                
         //AFSessionManager config
         _sessionManager = [[AFHTTPSessionManager alloc] initWithSessionConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
         
         //RequestSerializer
         _sessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
         _sessionManager.requestSerializer.allowsCellularAccess = YES;
-        
-        _sessionManager.requestSerializer.timeoutInterval = [SJNetworkConfig sharedConfig].timeoutSeconds;
-        
+        _sessionManager.requestSerializer.timeoutInterval = [self timeoutInterval];
         //securityPolicy
         _sessionManager.securityPolicy = [AFSecurityPolicy defaultPolicy];
         [_sessionManager.securityPolicy setAllowInvalidCertificates:YES];
@@ -80,140 +70,92 @@
     return self;
 }
 
-
 #pragma mark- ============== Public Methods ==============
+- (NSString *)baseURL{
+    return @"https://app.yotu.cn/";
+}
 
 
 - (void)sendRequest:(NSString *)url
              method:(SJRequestMethod)method
          parameters:(id)parameters
-          loadCache:(BOOL)loadCache
-      cacheDuration:(NSTimeInterval)cacheDuration
             success:(SJSuccessBlock)successBlock
             failure:(SJFailureBlock)failureBlock{
-    
-
-    //generate complete url string
+    NSString *subUrlString = url;
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    [dict addEntriesFromDictionary:[SJNetworkConfig sharedConfig].defailtParameters];
+    if ([self defaultParameters].count) {
+        [dict addEntriesFromDictionary:[self defaultParameters]];
+    }
     NSDate* date = [NSDate dateWithTimeIntervalSinceNow:0];//获取当前时间0秒后的时间
     NSTimeInterval time = [date timeIntervalSince1970];
     [dict setValue:[NSNumber numberWithInteger:time] forKey:@"time"];
-    if (method == SJRequestMethodGET)
-    {
-        if (parameters && [parameters isKindOfClass:[NSDictionary class]])
-        {
+    if (method == SJRequestMethodGET){
+        if (parameters && [parameters isKindOfClass:[NSDictionary class]]){
             [dict addEntriesFromDictionary:parameters];
         }
     }
-    NSString *newurl =  [[YTUrlUtils appendAllUrlPostfix:url params:dict] URLEncoding];
-    if (method == SJRequestMethodPOST)
-    {
-        if (parameters && [parameters isKindOfClass:[NSDictionary class]])
-        {
+    if ([self isAutoSignURL]) {
+        subUrlString = [self signURL:url parameters:dict];
+    }
+    if (method == SJRequestMethodPOST){
+        if (parameters && [parameters isKindOfClass:[NSDictionary class]]){
             [dict addEntriesFromDictionary:parameters];
         }
     }
-    NSString *completeUrlStr = [SJNetworkUtils generateCompleteRequestUrlStrWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                             requestUrlStr:newurl];
     
-    
-    //request method
+    NSString *urlString = [NSString stringWithFormat:@"%@%@",[self baseURL],subUrlString];
     NSString *methodStr = [self p_methodStringFromRequestMethod:method];
-    
     //generate a unique identifer of a certain request
-    NSString *requestIdentifer = [SJNetworkUtils generateRequestIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                          requestUrlStr:newurl
-                                                                              methodStr:methodStr
-                                                                             parameters:parameters];
-    
-    
-    if (loadCache) {
-        
-        //if client wants to load cache
-        [_cacheManager loadCacheWithRequestIdentifer:requestIdentifer completionBlock:^(id  _Nullable cacheObject) {
-            
-            if (cacheObject) {
-                
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    
-                    if(_isDebugMode){
-                        //DDLogInfo(@"=========== Request succeed by loading Cache! \n =========== Request url:%@\n =========== Response object:%@", completeUrlStr,cacheObject);
-                    }
-                    
-                    if (successBlock) {
-                        successBlock(cacheObject);
-                        return;
-                    }
-                });
-                
-                
-            }else{
-                
-                DDLogInfo(@"=========== Failed to load cache, start to sending network request...");
-                [self p_sendRequestWithCompleteUrlStr:completeUrlStr
-                                               method:methodStr
-                                           parameters:parameters
-                                            loadCache:loadCache
-                                        cacheDuration:cacheDuration
-                                     requestIdentifer:requestIdentifer
-                                              success:successBlock
-                                              failure:failureBlock];
-                
-            }
-            
-        }];
-        
-    }else {
-        
-        SJLog(@"=========== Do not need to load cache, start sending network request...");
-        [self p_sendRequestWithCompleteUrlStr:completeUrlStr
-                                       method:methodStr
-                                   parameters:parameters
-                                    loadCache:loadCache
-                                cacheDuration:cacheDuration
-                             requestIdentifer:requestIdentifer
-                                      success:successBlock
-                                      failure:failureBlock];
-        
-    }
+    NSString *requestIdentifer = [SJNetworkUtils generateRequestIdentiferWithUrlStr:subUrlString methodStr:methodStr parameters:parameters];
+    [self p_sendRequestWithCompleteUrlStr:urlString
+                                   method:methodStr
+                               parameters:parameters
+                         requestIdentifer:requestIdentifer
+                                  success:successBlock
+                                  failure:failureBlock];
 }
 
 
+/// URL地址+参数 生成带有签名的新的地址
+/// @param urlString NSString
+/// @param parameters NSDictionary
+- (NSString *)signURL:(NSString *)urlString
+           parameters:(NSDictionary *)parameters{
+    return [SJNetworkUtils URLEncoding:[SJNetworkUtils appendAllUrlPostfix:urlString params:parameters]];;
+}
 
+- (NSDictionary *)defaultParameters{
+    NSDictionary *dict = @{@"vc":@"1.1.10",
+                                   @"platform":@"iOS", @"appid":@"yotu", @"os_type":@"Ios", @"ch":@"appstore", @"brand":@"iPhone10,3", @"mf":@"apple", @"m2":@"A3AD912C-5F56-4E3C-BE8E-3C840C231E5A", @"re":@"1000", @"jsvc":@"1", @"svc": @"1", @"sys":@"iPhone10,3", @"os_name":@"14.2"};
+    return dict;
+}
+
+
+- (NSTimeInterval)timeoutInterval{
+    return 30;
+}
 
 #pragma mark- ============== Private Methods ==============
-
 
 - (void)p_sendRequestWithCompleteUrlStr:(NSString *)completeUrlStr
                                  method:(NSString *)methodStr
                              parameters:(id)parameters
-                              loadCache:(BOOL)loadCache
-                          cacheDuration:(NSTimeInterval)cacheDuration
                        requestIdentifer:(NSString *)requestIdentifer
                                 success:(SJSuccessBlock)successBlock
                                 failure:(SJFailureBlock)failureBlock{
     
     //add customed headers
     [self addCustomHeaders];
-    
-    
     //add default parameters
     NSDictionary * completeParameters = [self addDefaultParametersWithCustomParameters:parameters];
-    
-    
     //create corresponding request model
     SJNetworkRequestModel *requestModel = [[SJNetworkRequestModel alloc] init];
     requestModel.requestUrl = completeUrlStr;
+    requestModel.requestIdentifer = requestIdentifer;
     requestModel.method = methodStr;
     requestModel.parameters = completeParameters;
-    requestModel.loadCache = loadCache;
-    requestModel.cacheDuration = cacheDuration;
-    requestModel.requestIdentifer = requestIdentifer;
     requestModel.successBlock = successBlock;
     requestModel.failureBlock = failureBlock;
-    
-    
     //create a session task corresponding to a request model
     NSError * __autoreleasing requestSerializationError = nil;
     NSURLSessionDataTask *dataTask = [self p_dataTaskWithRequestModel:requestModel
@@ -223,20 +165,14 @@
     
     //save task info request model
     requestModel.task = dataTask;
-    
     //save this request model into request set
     [[SJNetworkRequestPool sharedPool] addRequestModel:requestModel];
-    
     if (_isDebugMode) {
         SJLog(@"=========== Start requesting...\n =========== url:%@\n =========== method:%@\n =========== parameters:%@",completeUrlStr,methodStr,completeParameters);
     }
-    
-    
     //start request
     [dataTask resume];
-    
 }
-
 
 
 - (NSURLSessionDataTask *)p_dataTaskWithRequestModel:(SJNetworkRequestModel *)requestModel
@@ -249,24 +185,21 @@
                                                              parameters:requestModel.parameters
                                                                   error:error];
     
-
-  
     //create data task
     __weak __typeof(self) weakSelf = self;
     NSURLSessionDataTask * dataTask = [_sessionManager dataTaskWithRequest:request
                                                             uploadProgress:nil
                                                           downloadProgress:nil
                                                          completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error){
-        DDLogInfo(@"response url : %@\r\n responseObject: %@",response.URL,responseObject);
+        if (self->_isDebugMode) {
+            SJLog(@"response url : %@\r\n responseObject: %@",response.URL,responseObject);
+        }
         [weakSelf p_handleRequestModel:requestModel responseObject:responseObject error:error];
                                   }];
     
     return dataTask;
     
 }
-
-
-
 
 - (void)p_handleRequestModel:(SJNetworkRequestModel *)requestModel
               responseObject:(id)responseObject
@@ -282,47 +215,33 @@
     }
     
     if (requestSucceed) {
-        
-        //request succeed
         requestModel.responseObject = responseObject;
         [self requestDidSucceedWithRequestModel:requestModel];
         
     } else {
-        
-        //request failed
         [self requestDidFailedWithRequestModel:requestModel error:requestError];
     }
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        
         [self handleRequesFinished:requestModel];
-        
     });
     
 }
 
-
-
-
 - (NSString *)p_methodStringFromRequestMethod:(SJRequestMethod)method{
-    
     switch (method) {
-            
         case SJRequestMethodGET:{
             return @"GET";
         }
             break;
-            
         case SJRequestMethodPOST:{
             return  @"POST";
         }
             break;
-            
         case SJRequestMethodPUT:{
             return  @"PUT";
         }
             break;
-            
         case SJRequestMethodDELETE:{
             return  @"DELETE";
         }
@@ -333,29 +252,22 @@
 
 #pragma mark- ============== Override Methods ==============
 
-
 - (void)requestDidSucceedWithRequestModel:(SJNetworkRequestModel *)requestModel{
-    
     //write cache
     if (requestModel.cacheDuration > 0) {
-        
         requestModel.responseData = [NSJSONSerialization dataWithJSONObject:requestModel.responseObject options:NSJSONWritingPrettyPrinted error:nil];
-        
         if (requestModel.responseData) {
-            
             [_cacheManager writeCacheWithReqeustModel:requestModel asynchronously:YES];
-            
         }else{
-            SJLog(@"=========== Failded to write cache, since something was wrong when transfering response data");
+            if (_isDebugMode) {
+                SJLog(@"=========== Failded to write cache, since something was wrong when transfering response data");
+            }
         }
-        
-        
     }
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        
-        if (_isDebugMode) {
-            //SJLog(@"=========== Request succeed! \n =========== Request url:%@\n =========== Response object:%@", requestModel.requestUrl,requestModel.responseObject);
+        if (self->_isDebugMode) {
+            SJLog(@"=========== Request succeed! \n =========== Request url:%@\n =========== Response object:%@", requestModel.requestUrl,requestModel.responseObject);
         }
         
         if (requestModel.successBlock) {
@@ -367,59 +279,43 @@
 
 
 - (void)requestDidFailedWithRequestModel:(SJNetworkRequestModel *)requestModel error:(NSError *)error{
-    
-    
     dispatch_async(dispatch_get_main_queue(), ^{
-        
-        if (_isDebugMode) {
+        if (self->_isDebugMode) {
             SJLog(@"=========== Request failded! \n =========== Request model:%@ \n =========== NSError object:%@ \n =========== Status code:%ld",requestModel,error,(long)error.code);
         }
-        
         if (requestModel.failureBlock){
             requestModel.failureBlock(requestModel.task, error, error.code);
         }
-        
     });
 }
 
 
-
-
 - (id)addDefaultParametersWithCustomParameters:(id)parameters{
-    
     //if there is default parameters, then add them into custom parameters
     id parameters_spliced = nil;
-    
     if (parameters && [parameters isKindOfClass:[NSDictionary class]]) {
-        
-        if ([[[SJNetworkConfig sharedConfig].defailtParameters allKeys] count] > 0 && _isAddCustomHeaders) {
-            
-            NSMutableDictionary *defaultParameters_m = [[SJNetworkConfig sharedConfig].defailtParameters mutableCopy];
+        if ([[self.defaultParameters allKeys] count] > 0) {
+            NSMutableDictionary *defaultParameters_m = [self.defaultParameters mutableCopy];
             [defaultParameters_m addEntriesFromDictionary:parameters];
             parameters_spliced = [defaultParameters_m copy];
             
         }else{
-            
             parameters_spliced = parameters;
         }
-            // 金角大王
-        }else if(parameters && [parameters isKindOfClass:[NSArray class]]) {
-            parameters_spliced = parameters;
-        }
-        else{
-            parameters_spliced = [SJNetworkConfig sharedConfig].defailtParameters;
-        }
-        
-        return parameters_spliced;
+    }else if(parameters && [parameters isKindOfClass:[NSArray class]]) {
+        parameters_spliced = parameters;
+    }else{
+        parameters_spliced = self.defaultParameters;
+    }
+    return parameters_spliced;
 }
 
 
 - (void)addCustomHeaders{
     
     //add custom header
-    NSDictionary *customHeaders = [SJNetworkConfig sharedConfig].customHeaders;
-    if ([customHeaders allKeys] > 0 && _isAddCustomHeaders) {
-        
+    NSDictionary *customHeaders = [self customHeader];
+    if ([customHeaders allKeys] > 0) {
         NSArray *allKeys = [customHeaders allKeys];
         if ([allKeys count] >0) {
             [customHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL * _Nonnull stop) {
@@ -440,7 +336,6 @@
     
     //clear all blocks
     [requestModel clearAllBlocks];
-    
     //remove this requst model from request queue
     [[SJNetworkRequestPool sharedPool] removeRequestModel:requestModel];
     

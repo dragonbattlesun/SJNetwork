@@ -8,12 +8,8 @@
 
 #import "SJNetworkCacheManager.h"
 #import "SJNetworkRequestModel.h"
-#import "SJNetworkConfig.h"
 #import "SJNetworkUtils.h"
 #import "SJNetworkCacheInfo.h"
-#import "SJNetworkDownloadResumeDataInfo.h"
-
-
 
 #ifndef NSFoundationVersionNumber_iOS_8_0
 #define NSFoundationVersionNumber_With_QoS_Available 1140.11
@@ -68,11 +64,8 @@ static dispatch_queue_t sj_cache_io_queue() {
     
     self = [super init];
     if (self) {
-        
         _fileManager = [NSFileManager defaultManager];
         _cacheBasePath = [SJNetworkUtils createCacheBasePath];
-        _isDebugMode = [SJNetworkConfig sharedConfig].debugMode;
-        
     }
     return self;
 }
@@ -103,30 +96,18 @@ static dispatch_queue_t sj_cache_io_queue() {
 
 #pragma mark Load Cache
 
-
-
-- (void)loadCacheWithUrl:(NSString * _Nonnull)url completionBlock:(SJLoadCacheArrCompletionBlock _Nullable)completionBlock{
-    
-    NSString *partialIdentifier = [SJNetworkUtils generatePartialIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                           requestUrlStr:url
-                                                                               methodStr:nil];
-    
+- (void)loadCacheWithUrl:(NSString * _Nonnull)url
+         completionBlock:(SJLoadCacheArrCompletionBlock _Nullable)completionBlock{
+    NSString *partialIdentifier = [SJNetworkUtils generateRequestIdentiferWithUrlStr:url methodStr:nil parameters:nil];
     [self p_loadCacheWithPartialIdentifier:partialIdentifier completionBlock:completionBlock];
-
 }
 
 
 - (void)loadCacheWithUrl:(NSString * _Nonnull)url
                   method:(NSString * _Nonnull)method
          completionBlock:(SJLoadCacheArrCompletionBlock _Nullable)completionBlock{
-    
-    
-    NSString *partialIdentifier = [SJNetworkUtils generatePartialIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                           requestUrlStr:url
-                                                                               methodStr:method];
-    
+    NSString *partialIdentifier = [SJNetworkUtils generateRequestIdentiferWithUrlStr:url methodStr:method parameters:nil];
     [self p_loadCacheWithPartialIdentifier:partialIdentifier completionBlock:completionBlock];
-    
 }
 
 
@@ -137,17 +118,11 @@ static dispatch_queue_t sj_cache_io_queue() {
               parameters:(id _Nullable)parameters
          completionBlock:(SJLoadCacheCompletionBlock _Nullable)completionBlock{
 
-    NSString *requestIdentifer = [SJNetworkUtils generateRequestIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                          requestUrlStr:url
-                                                                              methodStr:method
-                                                                             parameters:parameters];
-    
+    NSString *requestIdentifer = [SJNetworkUtils generateRequestIdentiferWithUrlStr:url methodStr:method parameters:parameters];
     [self loadCacheWithRequestIdentifer:requestIdentifer completionBlock:^(NSArray * _Nullable cacheArr) {
-        
         if (completionBlock) {
             completionBlock(cacheArr);
         }
-    
     }];
     
 }
@@ -341,9 +316,7 @@ static dispatch_queue_t sj_cache_io_queue() {
 - (void)clearCacheWithUrl:(NSString * _Nonnull)url completionBlock:(SJClearCacheCompletionBlock _Nullable)completionBlock{
 
     
-    NSString *partiticalIdentifier = [SJNetworkUtils generatePartialIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                              requestUrlStr:url
-                                                                                  methodStr:nil];
+    NSString *partiticalIdentifier = [SJNetworkUtils generateRequestIdentiferWithUrlStr:url methodStr:@"" parameters:nil];
     
     [self p_clearCacheWithIdentifier:partiticalIdentifier completionBlock:completionBlock];
     
@@ -356,9 +329,7 @@ static dispatch_queue_t sj_cache_io_queue() {
                    method:(NSString * _Nonnull)method
           completionBlock:(SJClearCacheCompletionBlock _Nullable)completionBlock{
     
-    NSString *partiticalIdentifier = [SJNetworkUtils generatePartialIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                              requestUrlStr:url
-                                                                                  methodStr:method];
+    NSString *partiticalIdentifier = [SJNetworkUtils generateRequestIdentiferWithUrlStr:url methodStr:method parameters:nil];
     
     [self p_clearCacheWithIdentifier:partiticalIdentifier completionBlock:completionBlock];
 }
@@ -371,58 +342,17 @@ static dispatch_queue_t sj_cache_io_queue() {
                parameters:(id _Nullable)parameters
           completionBlock:(SJClearCacheCompletionBlock _Nullable)completionBlock{
 
-    NSString *requestIdentifer = [SJNetworkUtils generateRequestIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                          requestUrlStr:url
-                                                                              methodStr:method
-                                                                             parameters:parameters];
-    
+    NSString *requestIdentifer = [SJNetworkUtils generateRequestIdentiferWithUrlStr:url methodStr:method parameters:parameters];
     [self p_clearCacheWithIdentifier:requestIdentifer completionBlock:completionBlock];
-    
 }
 
 
 
 #pragma mark Update resume data or resume data info
-
-- (void)updateResumeDataInfoAfterSuspendWithRequestModel:(SJNetworkRequestModel *_Nonnull)requestModel{
-    
-    NSData *resumeData = requestModel.task.error.userInfo[NSURLSessionDownloadTaskResumeData];
-    [resumeData writeToFile:requestModel.resumeDataFilePath options:NSDataWritingAtomic error:nil];
-    
-    int64_t downloadedByte = requestModel.task.countOfBytesReceived;
-    int64_t totalByte = requestModel.task.countOfBytesExpectedToReceive;
-    CGFloat percent = 1.0 *downloadedByte/totalByte;
-    SJNetworkDownloadResumeDataInfo *dataInfo = [self loadResumeDataInfo:requestModel.resumeDataInfoFilePath];
-    dataInfo.resumeDataLength = [NSString stringWithFormat:@"%lld",downloadedByte];
-    dataInfo.totalDataLength = [NSString stringWithFormat:@"%lld",totalByte];
-    dataInfo.resumeDataRatio = [NSString stringWithFormat:@"%.2f",percent];
-    [NSKeyedArchiver archiveRootObject:dataInfo toFile:requestModel.resumeDataInfoFilePath];
-}
-
-
-
-
 - (void)removeResumeDataAndResumeDataInfoFileWithRequestModel:(SJNetworkRequestModel *_Nonnull)requestModel{
-    
     [_fileManager removeItemAtPath:requestModel.resumeDataFilePath error:nil];
     [_fileManager removeItemAtPath:requestModel.resumeDataInfoFilePath error:nil];
-    
 }
-
-
-
-- (void)removeCompleteDownloadDataAndClearResumeDataInfoFileWithRequestModel:(SJNetworkRequestModel *_Nonnull)requestModel{
-    
-    NSError *moveFileError = nil;
-    [_fileManager moveItemAtPath:requestModel.resumeDataFilePath toPath:requestModel.downloadFilePath error:&moveFileError];
-    if (moveFileError.code == 516) {
-        [_fileManager removeItemAtPath:requestModel.resumeDataFilePath error:nil];
-    }
-    [_fileManager removeItemAtPath:requestModel.resumeDataInfoFilePath error:nil];
-    
-}
-
-
 
 - (void)removeCacheDataFile:(NSString *)cacheDataFilePath cacheInfoFile:(NSString *)cacheInfoFilePath{
     
@@ -436,34 +366,9 @@ static dispatch_queue_t sj_cache_io_queue() {
     
 }
 
-#pragma mark load resume data info
-
-
-- (SJNetworkDownloadResumeDataInfo *)loadResumeDataInfo:(NSString *)filePath {
-    
-    SJNetworkDownloadResumeDataInfo *dataInfo = nil;
-    if ([_fileManager fileExistsAtPath:filePath isDirectory:nil]) {
-        dataInfo = [NSKeyedUnarchiver unarchiveObjectWithFile:filePath];
-        if ([dataInfo isKindOfClass:[SJNetworkDownloadResumeDataInfo class]]) {
-            return dataInfo;
-        }else{
-            return nil;
-        }
-    }
-    return nil;
-}
-
-
-
-
-
 #pragma mark- ============== Private Methods ==============
-
-
 - (void)p_wrtieCacheWithRequestModel:(SJNetworkRequestModel *)requestModel{
-    
     if (requestModel.responseData) {
-        
         //path of cache file
         [requestModel.responseData writeToFile:requestModel.cacheDataFilePath atomically:YES];
         
@@ -625,12 +530,12 @@ static dispatch_queue_t sj_cache_io_queue() {
             
             dispatch_async(sj_cache_io_queue(), ^{
                 
-                [_fileManager removeItemAtPath:deleteFileNamesArr[index] error:nil];
+                [self->_fileManager removeItemAtPath:deleteFileNamesArr[index] error:nil];
                 
                 if (index == deleteFileNamesArr.count - 1) {
                     
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        if (_isDebugMode) {
+                        if (self->_isDebugMode) {
                             SJLog(@"=========== Clearing cache successfully!");
                         }
                         if (completionBlock) {
@@ -646,7 +551,7 @@ static dispatch_queue_t sj_cache_io_queue() {
     }else{
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (_isDebugMode) {
+            if (self->_isDebugMode) {
                 SJLog(@"=========== Clearing cache error: there is no corresponding cache info");
             }
             if (completionBlock) {
@@ -684,7 +589,6 @@ static dispatch_queue_t sj_cache_io_queue() {
     
     SJNetworkCacheInfo *cacheInfo = nil;
     if ([_fileManager fileExistsAtPath:cacheInfoFilePath isDirectory:nil]) {
-        
         cacheInfo = [NSKeyedUnarchiver unarchiveObjectWithFile:cacheInfoFilePath];
         if ([cacheInfo isKindOfClass:[SJNetworkCacheInfo class]]) {
             return cacheInfo;

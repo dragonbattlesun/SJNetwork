@@ -29,10 +29,12 @@
 //Request url
 @property (nonatomic, readwrite, copy)   NSString *requestUrl;
 
-
 //If ignore baseUrl(which is set in SJNetworkConfig singleton instance)
 @property (nonatomic, readwrite, assign) BOOL ignoreBaseUrl;
 
+
+/// 是否为debug模式
+@property (nonatomic, readwrite, assign) BOOL debugMode;
 
 //Request method
 @property (nonatomic, readwrite, copy)   NSString *method;
@@ -52,45 +54,6 @@
 
 @property (nonatomic, readwrite, copy)   SJSuccessBlock successBlock;
 @property (nonatomic, readwrite, copy)   SJFailureBlock failureBlock;
-
-
-
-
-//============== Only for upload request ==================//
-
-@property (nonatomic, readwrite, copy)   NSString *uploadUrl;                        //target upload url
-@property (nonatomic, readwrite, copy)   NSArray<UIImage *> *uploadImages;           //upload images(or image)array
-@property (nonatomic, readwrite, copy)   NSString *imagesIdentifer;                  //identifier of upload image
-@property (nonatomic, readwrite, copy)   NSString *mimeType;                         //mime type of upload file
-@property (nonatomic, readwrite, assign) float imageCompressRatio;                   //compress ratio of all upload images, default is 1(original)
-@property (nonatomic, readonly, copy)    NSString *cacheDataFilePath;                //cache data file path
-@property (nonatomic, readonly, copy)    NSString *cacheDataInfoFilePath;            //cache data info file path(record info of corresponding cache data)
-
-
-@property (nonatomic, readwrite, copy)   SJUploadSuccessBlock uploadSuccessBlock;
-@property (nonatomic, readwrite, copy)   SJUploadProgressBlock uploadProgressBlock;
-@property (nonatomic, readwrite, copy)   SJUploadFailureBlock uploadFailedBlock;
-
-
-
-
-//============== Only for download request ==================//
-
-@property (nonatomic, readwrite, copy)   NSString *downloadFilePath;                  // target download file path
-@property (nonatomic, readwrite, assign) BOOL resumableDownload;                      // if support resumable download, default is YES
-@property (nonatomic, readwrite, assign) BOOL backgroundDownloadSupport;              // if support background download, default is NO
-@property (nonatomic, readwrite, strong) NSOutputStream *stream;                      // stream used to save download data
-@property (nonatomic, readwrite, assign) NSInteger totalLength;                       // total length of download file
-@property (nonatomic, readonly, copy)    NSString *resumeDataFilePath;                // resume data file path
-@property (nonatomic, readonly, copy)    NSString *resumeDataInfoFilePath;            // resume data info file path
-@property (nonatomic, readwrite, assign) SJDownloadManualOperation manualOperation;   // requst operation by user
-
-@property (nonatomic, readwrite, copy)   SJDownloadSuccessBlock downloadSuccessBlock;
-@property (nonatomic, readwrite, copy)   SJDownloadProgressBlock downloadProgressBlock;
-@property (nonatomic, readwrite, copy)   SJDownloadFailureBlock downloadFailureBlock;
-
-
-
 
 /**
  *  This method is used to return request type of this request

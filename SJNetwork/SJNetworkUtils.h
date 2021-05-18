@@ -34,8 +34,6 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  */
 + (NSString * _Nullable)appVersionStr;
 
-
-
 /**
  *  This method is used to generate the md5 string of given string
  *
@@ -44,23 +42,6 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  *  @return the transformed md5 string
  */
 + (NSString * _Nonnull)generateMD5StringFromString:(NSString *_Nonnull)string;
-
-
-
-
-/**
- *  This method is used to generate complete request url
- *
- *  @param baseUrlStr                   base url
- *  @param requestUrlStr                request url
- *
- *  @return the complete request url
- */
-+ (NSString *_Nonnull)generateCompleteRequestUrlStrWithBaseUrlStr:(NSString *_Nonnull)baseUrlStr requestUrlStr:(NSString *_Nonnull)requestUrlStr;
-
-
-
-
 
 /**
  *  This method is used to generate partial identifier of more than one request
@@ -82,31 +63,15 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
 /**
  *  This method is used to generate unique identifier of a specific request
  *
- *  @param baseUrlStr                   base url
  *  @param requestUrlStr                request url
  *  @param methodStr                    request method
  *  @param parameters                   parameters (can be nil)
  *
  *  @return the unique identifier  of a specific request
  */
-+ (NSString *_Nonnull)generateRequestIdentiferWithBaseUrlStr:(NSString * _Nullable)baseUrlStr
-                                               requestUrlStr:(NSString * _Nullable)requestUrlStr
-                                                   methodStr:(NSString * _Nullable)methodStr
-                                                  parameters:(id _Nullable)parameters;
-
-
-
-/**
- *  This method is used to generate unique identifier of a download request
- *
- *  @param baseUrlStr                   base url
- *  @param requestUrlStr                request url
- *
- *  @return the unique identifier of a download request
- */
-+ (NSString * _Nonnull)generateDownloadRequestIdentiferWithBaseUrlStr:(NSString * _Nullable)baseUrlStr requestUrlStr:(NSString * _Nonnull)requestUrlStr;
-
-
++ (NSString * _Nonnull)generateRequestIdentiferWithUrlStr:(NSString * _Nullable)UrlStr
+                                                methodStr:(NSString * _Nullable)methodStr
+                                               parameters:(id _Nullable)parameters;
 
 
 /**
@@ -169,9 +134,6 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  */
 + (NSString * _Nonnull)resumeDataFilePathWithRequestIdentifer:(NSString * _Nonnull)requestIdentifer downloadFileName:(NSString * _Nonnull)downloadFileName;
 
-
-
-
 /**
  *  This method is used to return the resume data info file path of the given requestIdentifer
  *
@@ -180,9 +142,6 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  *  @return the resume data info file path
  */
 + (NSString * _Nonnull)resumeDataInfoFilePathWithRequestIdentifer:(NSString * _Nonnull)requestIdentifer;
-
-
-
 
 /**
  *  This method is used to check the availability of given data
@@ -193,10 +152,6 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  */
 + (BOOL)availabilityOfData:(NSData * _Nonnull)data;
 
-
-
-
-
 /**
  *  This method is used to generate image file type string of a certain image data
  *
@@ -206,5 +161,19 @@ extern NSString * _Nonnull const SJNetworkDownloadResumeDataInfoFileSuffix;
  */
 + (NSString * _Nullable)imageFileTypeForImageData:(NSData * _Nonnull)imageData;
 
+
+///网络请求的url 及参数进行处理
+/// @param url NSString
+/// @param paramsDict NSDictionary
++ (NSString *_Nullable)appendAllUrlPostfix:(NSString *_Nullable)url
+                                    params:(NSDictionary*_Nullable)paramsDict;
+
+/// URL Decoding
+/// @param urlString NSString
++ (NSString *)URLDecoding:(NSString *)urlString;
+
+/// URL Encoding
+/// @param urlString NSString
++ (NSString *)URLEncoding:(NSString *)urlString;
 
 @end

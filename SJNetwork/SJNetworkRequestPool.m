@@ -8,14 +8,12 @@
 
 #import "SJNetworkRequestPool.h"
 #import "SJNetworkUtils.h"
-#import "SJNetworkConfig.h"
 #import "SJNetworkRequestModel.h"
 #import "SJNetworkProtocol.h"
 
 #import "objc/runtime.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <pthread/pthread.h>
-
 
 #define Lock() pthread_mutex_lock(&_lock)
 #define Unlock() pthread_mutex_unlock(&_lock)
@@ -46,19 +44,11 @@ static char currentRequestModelsKey;
     return sharedPool;
 }
 
-
-
 - (instancetype)init {
-    
     self = [super init];
     if (self) {
-        
         //lock
         pthread_mutex_init(&_lock, NULL);
-        
-        //debug mode or not
-        _isDebugMode = [SJNetworkConfig sharedConfig].debugMode;
-        
     }
     return self;
 }
@@ -66,7 +56,6 @@ static char currentRequestModelsKey;
 #pragma mark- ============== Public Methods ==============
 
 - (SJCurrentRequestModels *)currentRequestModels {
-    
     SJCurrentRequestModels *currentTasks = objc_getAssociatedObject(self, &currentRequestModelsKey);
     if (currentTasks) {
         return currentTasks;
@@ -76,10 +65,7 @@ static char currentRequestModelsKey;
     return currentTasks;
 }
 
-
-
 - (void)addRequestModel:(SJNetworkRequestModel *)requestModel{
-    
     Lock();
     [self.currentRequestModels setObject:requestModel forKey:[NSString stringWithFormat:@"%ld",(unsigned long)requestModel.task.taskIdentifier]];
     Unlock();
@@ -88,11 +74,9 @@ static char currentRequestModelsKey;
 
 
 - (void)removeRequestModel:(SJNetworkRequestModel *)requestModel{
-    
     Lock();
     [self.currentRequestModels removeObjectForKey:[NSString stringWithFormat:@"%ld",(unsigned long)requestModel.task.taskIdentifier]];
     Unlock();
-    
 }
 
 
@@ -139,9 +123,7 @@ static char currentRequestModelsKey;
 
 
 - (void)logAllCurrentRequests{
-    
     if ([self remainingCurrentRequests]) {
-        
         [self.currentRequestModels enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, SJNetworkRequestModel * _Nonnull requestModel, BOOL * _Nonnull stop) {
             SJLog(@"=========== Log current request:\n %@",requestModel);
         }];
@@ -154,35 +136,13 @@ static char currentRequestModelsKey;
 
 
 - (void)cancelAllCurrentRequests{
-    
     if ([self remainingCurrentRequests]) {
-        
         for (SJNetworkRequestModel *requestModel in [self.currentRequestModels allValues]) {
-            
-        
-            if (requestModel.requestType == SJRequestTypeDownload) {
-                
-                if (requestModel.backgroundDownloadSupport) {
-                    
-                    NSURLSessionDownloadTask *downloadTask = (NSURLSessionDownloadTask*)requestModel.task;
-                    [downloadTask cancelByProducingResumeData:^(NSData * _Nullable resumeData) {
-                    }];
-                    
-                }else{
-                    
-                    [requestModel.task cancel];
-                }
-                
-            }else{
-                
-                [requestModel.task cancel];
-                [self removeRequestModel:requestModel];
-            }
+            [requestModel.task cancel];
+            [self removeRequestModel:requestModel];
         }
         SJLog(@"=========== Canceled call current requests");
     }
-    
-    
 }
 
 
@@ -190,7 +150,6 @@ static char currentRequestModelsKey;
 
 
 - (void)cancelCurrentRequestWithUrl:(NSString * _Nonnull)url{
-    
     if(![self remainingCurrentRequests]){
         return;
     }
@@ -219,50 +178,12 @@ static char currentRequestModelsKey;
         }
         
         [cancelRequestModelsArr enumerateObjectsUsingBlock:^(SJNetworkRequestModel *requestModel, NSUInteger idx, BOOL * _Nonnull stop) {
-            
-            
-            if (requestModel.requestType == SJRequestTypeDownload) {
-                
-                if (requestModel.backgroundDownloadSupport) {
-                    NSURLSessionDownloadTask *downloadTask = (NSURLSessionDownloadTask*)requestModel.task;
-                    
-                    if (requestModel.task.state == NSURLSessionTaskStateCompleted) {
-                        
-                        SJLog(@"=========== Canceled background support download request:%@",requestModel);
-                        NSError *error = [NSError errorWithDomain:@"Request has been canceled" code:0 userInfo:nil];
-                        
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            
-                            if (requestModel.downloadFailureBlock) {
-                                requestModel.downloadFailureBlock(requestModel.task, error,requestModel.resumeDataFilePath);
-                            }
-                            [self handleRequesFinished:requestModel];
-                        });
-                        
-                    }else{
-                        
-                        [downloadTask cancelByProducingResumeData:^(NSData * _Nullable resumeData) {
-                            
-                        }];
-                        SJLog(@"=========== Background support download request %@ has been canceled",requestModel);
-                    }
-                    
-                }else{
-                    
-                    [requestModel.task cancel];
-                    SJLog(@"=========== Request %@ has been canceled",requestModel);
-                }
-                
-            }else{
-                
-                [requestModel.task cancel];
-                SJLog(@"=========== Request %@ has been canceled",requestModel);
-                if (requestModel.requestType != SJRequestTypeDownload) {
-                    [self removeRequestModel:requestModel];
-                }
+            [requestModel.task cancel];
+            SJLog(@"=========== Request %@ has been canceled",requestModel);
+            if (requestModel.requestType != SJRequestTypeDownload) {
+                [self removeRequestModel:requestModel];
             }
         }];
-        
         SJLog(@"=========== All requests with request url : '%@' are canceled",url);
     }
     
@@ -273,7 +194,6 @@ static char currentRequestModelsKey;
 
 
 - (void)cancelCurrentRequestWithUrls:(NSArray * _Nonnull)urls{
-    
     if ([urls count] == 0) {
         SJLog(@"=========== There is no input urls!");
         return;
@@ -289,38 +209,13 @@ static char currentRequestModelsKey;
 }
 
 
-
-
-
-
-- (void)cancelCurrentRequestWithUrl:(NSString * _Nonnull)url
-                             method:(NSString * _Nonnull)method
-                         parameters:(id _Nullable)parameter{
-    
-    if(![self remainingCurrentRequests]){
-        return;
-    }
-    
-    NSString *requestIdentifier = [SJNetworkUtils generateRequestIdentiferWithBaseUrlStr:[SJNetworkConfig sharedConfig].baseUrl
-                                                                           requestUrlStr:url
-                                                                               methodStr:method
-                                                                              parameters:parameter];
-    
-    [self p_cancelRequestWithRequestIdentifier:requestIdentifier];
-}
-
-
-
 #pragma mark- ============== Private Methods ==============
 
 - (void)p_cancelRequestWithRequestIdentifier:(NSString *)requestIdentifier{
-    
     [self.currentRequestModels enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, SJNetworkRequestModel * _Nonnull requestModel, BOOL * _Nonnull stop) {
         
         if ([requestModel.requestIdentifer isEqualToString:requestIdentifier]) {
-            
             if (requestModel.task) {
-                
                 [requestModel.task cancel];
                 SJLog(@"=========== Canceled request:%@",requestModel);
                 if (requestModel.requestType != SJRequestTypeDownload) {

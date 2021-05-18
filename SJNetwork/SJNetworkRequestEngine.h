@@ -21,11 +21,9 @@
 
 @interface SJNetworkRequestEngine : SJNetworkBaseEngine
 
-@property (nonatomic,assign) BOOL isAddCustomHeaders;
-
 /// 是否开启json 数据传输
 /// @param enableJson 开启/关闭
--(void) enableJsonRequest:(BOOL) enableJson;
+-(void)enableJsonRequest:(BOOL)enableJson;
 
 /**
  *  This method offers the most number of parameters of a certain network request.
@@ -65,8 +63,6 @@
  *  @param url                request url
  *  @param method             request method
  *  @param parameters         parameters
- *  @param loadCache          consider whether to load cache
- *  @param cacheDuration      consider whether to write cache
  *  @param successBlock       success callback
  *  @param failureBlock       failure callback
  *
@@ -74,11 +70,7 @@
 - (void)sendRequest:(NSString * _Nonnull)url
              method:(SJRequestMethod)method
          parameters:(id _Nullable)parameters
-          loadCache:(BOOL)loadCache
-      cacheDuration:(NSTimeInterval)cacheDuration
             success:(SJSuccessBlock _Nullable)successBlock
             failure:(SJFailureBlock _Nullable)failureBlock;
-
-
 
 @end

@@ -12,13 +12,14 @@
 
 @interface SJNetworkBaseEngine : NSObject
 
+- (NSString *)baseURL;
 
-/**
- *  This method is used to add customed headers, for subclass to override
- */
-- (void)addCustomHeaders;
+/// 是否支签名URL地址
+- (BOOL)isAutoSignURL;
 
+- (NSDictionary *)defaultParameters;
 
+- (NSDictionary *)customHeader;
 
 /**
  *  This method is used to add default parameters with custom parameters, for subclass to override

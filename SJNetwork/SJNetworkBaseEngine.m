@@ -10,29 +10,38 @@
 
 @implementation SJNetworkBaseEngine
 
+- (NSString *)baseURL{
+    return @"";
+}
+
+- (BOOL)isAutoSignURL{
+    return YES;
+}
+
+
+- (NSDictionary *)customHeader{
+    return @{};
+}
+
+- (NSDictionary *)defaultParameters{
+    return @{};
+}
 
 - (void)addCustomHeaders{
     
 }
-
-
 
 - (id)addDefaultParametersWithCustomParameters:(id)parameters{
     return nil;
 }
 
 
-
 - (void)requestDidSucceedWithRequestModel:(SJNetworkRequestModel *)requestModel{
-    
-    
+        
 }
 
-
-
 - (void)requestDidFailedWithRequestModel:(SJNetworkRequestModel *)requestModel error:(NSError *)error{
-    
-    
+        
 }
 
 @end

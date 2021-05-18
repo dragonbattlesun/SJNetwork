@@ -34,15 +34,12 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
 
 //============================= Initialization =============================//
 
-
 /**
  *  SJNetworkRequestPool Singleton
  *
  *  @return SJNetworkRequestPool singleton instance
  */
 + (SJNetworkRequestPool *_Nonnull)sharedPool;
-
-
 
 //============================= Requests Management =============================//
 
@@ -52,9 +49,6 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
  *  @return currentRequestModels    all current request models set(NSDictionary)
  */
 - (SJCurrentRequestModels *_Nonnull)currentRequestModels;
-
-
-
 
 /**
  *  This method is used to add a request model into current request models set
@@ -68,20 +62,12 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
  */
 - (void)removeRequestModel:(SJNetworkRequestModel *_Nonnull)requestModel;
 
-
-
-
 /**
  *  This method is used to exchange a new request model with an old one
  */
 - (void)changeRequestModel:(SJNetworkRequestModel *_Nonnull)requestModel forKey:(NSString *_Nonnull)key;
 
-
-
 //============================= Requests Info =============================//
-
-
-
 /**
  *  This method is used to check if there is remaining curent request
  *
@@ -89,26 +75,16 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
  */
 - (BOOL)remainingCurrentRequests;
 
-
-
 /**
  *  This method is used to calculate the count of current requests
  *
  *  @return the count of current requests
  */
 - (NSInteger)currentRequestCount;
-
-
-
-
 /**
  *  This method is used to log all current requests' information
  */
 - (void)logAllCurrentRequests;
-
-
-
-
 
 //============================= Cancel requests =============================//
 
@@ -117,10 +93,6 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
  *  This method is used to cancel all current requests
  */
 - (void)cancelAllCurrentRequests;
-
-
-
-
 
 /**
  *  This method is used to cancel all current requests corresponding a reqeust url,
@@ -131,10 +103,6 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
  */
 - (void)cancelCurrentRequestWithUrl:(NSString * _Nonnull)url;
 
-
-
-
-
 /**
  *  This method is used to cancel all current requests corresponding given reqeust urls,
  *  no matter what the method is and parameters are
@@ -143,24 +111,5 @@ typedef NSMutableDictionary<NSString *, SJNetworkRequestModel *> SJCurrentReques
  *
  */
 - (void)cancelCurrentRequestWithUrls:(NSArray * _Nonnull)urls;
-
-
-
-
-
-
-/**
- *  This method is used to cancel all current requests corresponding a specific reqeust url, method and parameters
- *
- *  @param url              request url
- *  @param method           request method
- *  @param parameters       parameters
- *
- */
-- (void)cancelCurrentRequestWithUrl:(NSString * _Nonnull)url
-                             method:(NSString * _Nonnull)method
-                         parameters:(id _Nullable)parameters;
-
-
 
 @end
