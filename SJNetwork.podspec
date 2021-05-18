@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "SJNetwork"
-  spec.version      = "1.0.1"
+  spec.version      = "1.0.2"
   spec.summary      = "基于AFNetworking4.0 封装的网络请求库"
 
   # This description is used to generate tags and improve search results.
